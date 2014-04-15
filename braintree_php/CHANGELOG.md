@@ -1,3 +1,55 @@
+## 2.27.0
+
+* Include Dispute information on Transaction
+* Search for Transactions disputed on a certain date
+
+## 2.26.0
+
+* Disbursement Webhooks
+
+## 2.25.1
+
+* Fix factories on AddOn and Discount (thanks [stewe](https://github.com/stewe))
+* Allow billingAddressId on transaction create
+
+## 2.25.0
+
+* Merchant account find API
+
+## 2.24.0
+
+* Merchant account update API
+* Merchant account create API v2
+
+## 2.23.1
+
+* Update configuration URLs
+
+## 2.23.0
+
+* Official Partnership support
+
+## 2.22.2
+
+* Add Partner Merchant Declined webhook
+* use preg_callback_replace instead of preg_replace (thanks [jonthornton](https://github.com/jonthornton)!)
+
+## 2.22.1
+
+* Adds missing test contstant to library namespace
+
+## 2.22.0
+
+* Adds holdInEscrow method
+* Add error codes for verification not supported error
+* Add companyName and taxId to merchant account create
+* Adds cancelRelease method
+* Adds releaseFromEscrow functionality
+* Adds phone to merchant account signature.
+* Adds merchant account phone error code.
+* Fix casing issues with Braintree\_Http and Braintree\_Util references (thanks [steven-hadfield](https://github.com/steven-hadfield)!)
+* Fixed transaction initialization arguments to be optional (thanks [karolsojko](https://github.com/karolsojko)!)
+
 ## 2.21.0
 
 * Enable device data.
@@ -214,4 +266,3 @@
 ## 1.0.0
 
 * Initial release
-

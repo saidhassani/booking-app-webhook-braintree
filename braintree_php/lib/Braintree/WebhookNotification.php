@@ -8,6 +8,14 @@ class Braintree_WebhookNotification extends Braintree
     const SUBSCRIPTION_TRIAL_ENDED = 'subscription_trial_ended';
     const SUBSCRIPTION_WENT_ACTIVE = 'subscription_went_active';
     const SUBSCRIPTION_WENT_PAST_DUE = 'subscription_went_past_due';
+    const SUB_MERCHANT_ACCOUNT_APPROVED = 'sub_merchant_account_approved';
+    const SUB_MERCHANT_ACCOUNT_DECLINED = 'sub_merchant_account_declined';
+    const TRANSACTION_DISBURSED = 'transaction_disbursed';
+    const DISBURSEMENT_EXCEPTION = 'disbursement_exception';
+    const DISBURSEMENT = 'disbursement';
+    const PARTNER_MERCHANT_CONNECTED = 'partner_merchant_connected';
+    const PARTNER_MERCHANT_DISCONNECTED = 'partner_merchant_disconnected';
+    const PARTNER_MERCHANT_DECLINED = 'partner_merchant_declined';
 
     public static function parse($signature, $payload)
     {
@@ -59,8 +67,36 @@ class Braintree_WebhookNotification extends Braintree
     protected function _initialize($attributes)
     {
         $this->_attributes = $attributes;
-        if (isset($attributes['subject']) && isset($attributes['subject']['subscription'])) {
+
+        if (isset($attributes['subject']['apiErrorResponse'])) {
+            $wrapperNode = $attributes['subject']['apiErrorResponse'];
+        } else {
+            $wrapperNode = $attributes['subject'];
+        }
+
+        if (isset($wrapperNode['subscription'])) {
             $this->_set('subscription', Braintree_Subscription::factory($attributes['subject']['subscription']));
+        }
+
+        if (isset($wrapperNode['merchantAccount'])) {
+            $this->_set('merchantAccount', Braintree_MerchantAccount::factory($wrapperNode['merchantAccount']));
+        }
+
+        if (isset($wrapperNode['transaction'])) {
+            $this->_set('transaction', Braintree_Transaction::factory($wrapperNode['transaction']));
+        }
+
+        if (isset($wrapperNode['disbursement'])) {
+            $this->_set('disbursement', Braintree_Disbursement::factory($wrapperNode['disbursement']));
+        }
+
+        if (isset($wrapperNode['partnerMerchant'])) {
+            $this->_set('partnerMerchant', Braintree_PartnerMerchant::factory($wrapperNode['partnerMerchant']));
+        }
+
+        if (isset($wrapperNode['errors'])) {
+            $this->_set('errors', new Braintree_Error_ValidationErrorCollection($wrapperNode['errors']));
+            $this->_set('message', $wrapperNode['message']);
         }
     }
 }

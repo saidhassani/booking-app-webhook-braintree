@@ -93,6 +93,24 @@ class Braintree_CustomerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(1, preg_match('/\A\w{32}\z/', $customer->creditCards[0]->uniqueNumberIdentifier));
     }
 
+    function testCreate_withVenmoSdkSession()
+    {
+        $result = Braintree_Customer::create(array(
+            'firstName' => 'Bat',
+            'lastName' => 'Manderson',
+            'creditCard' => array(
+                'number' => '5105105105105100',
+                'expirationDate' => '05/12',
+                'options' => array(
+                    'venmoSdkSession' => Braintree_Test_VenmoSdk::getTestSession()
+                )
+            )
+        ));
+        $this->assertEquals(true, $result->success);
+        $customer = $result->customer;
+        $this->assertEquals(true, $customer->creditCards[0]->venmoSdk);
+    }
+
     function testCreate_withVenmoSdkPaymentMethodCode()
     {
         $result = Braintree_Customer::create(array(
@@ -147,7 +165,8 @@ class Braintree_CustomerTest extends PHPUnit_Framework_TestCase
                 'expirationDate' => '05/12',
                 'cvv' => '123',
                 'cardholderName' => 'Mike Jones',
-                'deviceSessionId' => 'abc123'
+                'deviceSessionId' => 'abc123',
+                'fraudMerchantId' => '456'
             )
         ));
         $this->assertEquals(true, $result->success);
@@ -974,5 +993,3 @@ class Braintree_CustomerTest extends PHPUnit_Framework_TestCase
         );
     }
 }
-?>
-

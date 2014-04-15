@@ -19,7 +19,7 @@ abstract class Braintree_Instance
 {
     /**
      *
-     * @param array $aAttribs 
+     * @param array $aAttribs
      */
     public function  __construct($attributes)
     {
@@ -28,7 +28,7 @@ abstract class Braintree_Instance
         }
     }
 
-    
+
     /**
      * returns private/nonexistent instance properties
      * @access public
@@ -43,6 +43,17 @@ abstract class Braintree_Instance
             trigger_error('Undefined property on ' . get_class($this) . ': ' . $name, E_USER_NOTICE);
             return null;
         }
+    }
+
+    /**
+     * used by isset() and empty()
+     * @access public
+     * @param string $name property name
+     * @return boolean
+     */
+    public function __isset($name)
+    {
+        return array_key_exists($name, $this->_attributes);
     }
 
     /**
@@ -66,5 +77,5 @@ abstract class Braintree_Instance
     {
         $this->_attributes = $attributes;
     }
-    
+
 }

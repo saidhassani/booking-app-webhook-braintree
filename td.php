@@ -74,58 +74,64 @@
 					$cardExpireYear = $_POST['card_expiration_year'];
 					$cardCvv = isset($_POST['card_cvv']) ? $_POST['card_cvv'] : null;
 
-					createCustomer( $customerPk );
+					try {
+						Braintree_Customer::create( array( 'id' => $customerPk ) );
 
-					$cardData = array('customerId' => $customerPk,
-											'number' => $cardNumber,
-											'expirationMonth' => $cardExpireMonth,
-											'expirationYear' => $cardExpireYear,
-											'cardholderName' => $cardHolderName,
+						$cardData = array('customerId' => $customerPk,
+												'number' => $cardNumber,
+												'expirationMonth' => $cardExpireMonth,
+												'expirationYear' => $cardExpireYear,
+												'cardholderName' => $cardHolderName,
 
-											'options' => array(
-//																	'failOnDuplicatePaymentMethod' => true,
-															)
-										);
+												'options' => array(
+//																		'failOnDuplicatePaymentMethod' => true,
+																)
+											);
 
-					if( BT_ENV == 'production' ) {
-						$cardData['options'] = array('verifyCard' => true);
-					}
-
-					if( $cardCvv !== null ) {
-						$cardData['cvv'] = $cardCvv;
-					}
-
-					$cardResult = Braintree_CreditCard::create( $cardData );
-
-					if ( $cardResult->success ) {
-						$result['status_code'] = 200;
-
-						$fields = array('expirationDate','maskedNumber','default','expired','token','cardType','cardholderName');
-
-						$card = array();
-						foreach( $fields as $field ) {
-							$card[$field] = $cardResult->creditCard->$field;
+						if( BT_ENV == 'production' ) {
+							$cardData['options'] = array('verifyCard' => true);
 						}
-						$result['card'] = (object)$card;
 
-					} else {
-						$result['status_code'] = 400;
+						if( $cardCvv !== null ) {
+							$cardData['cvv'] = $cardCvv;
+						}
 
-						$msg = ''; $sep = '';
-						if( property_exists($cardResult, 'errors') ) {
+						$cardResult = Braintree_CreditCard::create( $cardData );
+
+						if ( $cardResult->success ) {
+							$result['status_code'] = 200;
+
+							$fields = array('expirationDate','maskedNumber','default','expired','token','cardType','cardholderName');
+
+							$card = array();
+							foreach( $fields as $field ) {
+								$card[$field] = $cardResult->creditCard->$field;
+							}
+							$result['card'] = (object)$card;
+
+						} else {
+							$result['status_code'] = 400;
+
+							$msg = ''; $sep = '';
 							foreach ( $cardResult->errors->deepAll() as $error ) {
 								$msg .= $sep . $error->message;
 								$sep = '; ';
 							}
-						}
-						if( trim($msg) == '' ) {
-							$msg = 'Card creation failed';
-						}
+							if( trim($msg) == '' ) {
+								$msg = $cardResult->message;
+							}
+							if( trim($msg) == '' ) {
+								$msg = 'Card creation failed';
+							}
 
-						$result['status'] = trim($msg);
-						l("Error: " . $msg);
+							$result['status'] = trim($msg);
+							l("Error: " . $msg);
+						}
+					} catch ( Exception $e ) {
+						$result['status_code'] = 400;
+						$result['status'] = 'Exception occured: ' . get_class($e) . ' ' . $e->getMessage();
+						l($result['status']);
 					}
-
 				} else {
 					$result['status_code'] = 400;
 					$result['status'] = 'Missing arguments';
@@ -141,13 +147,7 @@
 						$result['status_code'] = 200;
 					} catch ( Exception $e ) {
 						$result['status_code'] = 404;
-						$msg = trim($e->getMessage());
-
-						if( $msg == '' ) {
-							$msg = 'Failed to delete card';
-						}
-
-						$result['status'] = $msg;
+						$result['status'] = 'Failed to delete card. Exception: ' . get_class($e) . ' ' . $e->getMessage();
 					}
 				} else {
 					$result['status_code'] = 400;
@@ -177,6 +177,7 @@
 
 					} catch( Exception $e ) {
 						$result['cards'] = array();
+						$result['status'] = 'Exception occured: ' . get_class($e);
 					}
 				} else {
 					$result['status_code'] = 400;
@@ -247,45 +248,61 @@
 														'paymentMethodToken' => $cardToken,
 														'options' => array( 'submitForSettlement' => true )
 									);
-									$saleResult = Braintree_Transaction::sale( $order );
 
-									$braintreePaymentRef = '';
-									$braintreeCustomerCharged = false;
-									if ( $saleResult->success ) {
-										$result['status_code'] = 200;
-										$transaction = array('id' => $saleResult->transaction->id,
-																	'status' => $saleResult->transaction->status,
-																	'type' => $saleResult->transaction->type,
-																	'currencyIsoCode' => $saleResult->transaction->currencyIsoCode,
-																	'amount' => $saleResult->transaction->amount,
-																	'processorAuthorizationCode' => $saleResult->transaction->processorAuthorizationCode,
-																	'processorResponseCode' => $saleResult->transaction->processorResponseCode,
-																	'processorResponseText' => $saleResult->transaction->processorResponseText
-															);
-										$result['transaction'] = (object)$transaction;
+									$saleSuccess = false;
+									try {
+										$saleResult = Braintree_Transaction::sale( $order );
 
-										$braintreePaymentRef = $saleResult->transaction->id;
-										$braintreeCustomerCharged = true;
-									} else {
-										$result['status_code'] = 400;
-										$msg = ''; $sep = '';
-										if( property_exists($saleResult, 'errors') ) {
+										$saleSuccess = $saleResult->success;
+
+										$braintreePaymentRef = '';
+										$braintreeCustomerCharged = false;
+										if ( $saleSuccess ) {
+											$result['status_code'] = 200;
+											$transaction = array('id' => $saleResult->transaction->id,
+																		'status' => $saleResult->transaction->status,
+																		'type' => $saleResult->transaction->type,
+																		'currencyIsoCode' => $saleResult->transaction->currencyIsoCode,
+																		'amount' => $saleResult->transaction->amount,
+																		'processorAuthorizationCode' => $saleResult->transaction->processorAuthorizationCode,
+																		'processorResponseCode' => $saleResult->transaction->processorResponseCode,
+																		'processorResponseText' => $saleResult->transaction->processorResponseText
+																);
+											$result['transaction'] = (object)$transaction;
+
+											$braintreePaymentRef = $saleResult->transaction->id;
+											$braintreeCustomerCharged = true;
+										} else if ($result->transaction) {
+											$msg = 'Transaction declined: ' . $result->transaction->processorResponseText;
+											$result['status'] = $msg;
+											l($msg);
+										} else {
+											$result['status_code'] = 400;
+											$msg = ''; $sep = '';
 											foreach ( $saleResult->errors->deepAll() as $error ) {
 												$msg .= $sep . $error->message;
 												$sep  = '; ';
 											}
+											if(trim($msg) == '') {
+												$msg = $saleResult->message;
+											}
+											if(trim($msg) == '') {
+												$msg = 'Transaction declined.';
+											}
+											$result['status'] = $msg;
+											l('Error: ' . $msg);
 										}
-										if(trim($msg) == '') {
-											$msg = 'Transaction declined.';
-										}
+									} catch ( Exception $e ) {
+										$msg = 'Exception: ' . get_class($e) . ' ' . $e->getMessage();
+										$result['status_code'] = 400;
 										$result['status'] = $msg;
-										l('Error: ' . $msg);
+										l($msg);
 									}
 
 									// update booking
 									$fields = array('payment_ref'		=> $braintreePaymentRef,
 														 'card_token'		=> $cardToken,
-														 'payment_status'	=> ($saleResult->success) ? 'success' : 'error'
+														 'payment_status'	=> ($saleSuccess) ? 'success' : 'error'
 									);
 
 									$curl = curl_init();
@@ -295,6 +312,7 @@
 
 									$curlResponse = curl_exec($curl);
 									$curlErrno = curl_errno($curl);
+									$curlError = curl_error($curl);
 									curl_close($curl);
 
 									if( $curlErrno == CURLE_OK ) {
@@ -345,7 +363,7 @@
 
 					} else {
 						$result['status_code'] = 400;
-						$result['status'] = sprintf('Failed to connect to API (#%d)', $curlErrno);
+						$result['status'] = sprintf('Failed to connect to API (#%d: %s)', $curlErrno, $curlError);
 					}
 				} else {
 					$result['status_code'] = 400;
@@ -400,5 +418,4 @@ function validParams( $src, $params ) {
 function isAccessTokenValid( $accessToken ) {
 	return true;
 }
-
 

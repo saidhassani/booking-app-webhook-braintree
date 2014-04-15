@@ -154,7 +154,7 @@ class Braintree_CreditCard extends Braintree
     {
         $response = Braintree_Http::post("/payment_methods/all/expired", array('search' => array('ids' => $ids)));
 
-        return braintree_util::extractattributeasarray(
+        return Braintree_Util::extractattributeasarray(
             $response['paymentMethods'],
             'creditCard'
         );
@@ -440,7 +440,7 @@ class Braintree_CreditCard extends Braintree
          return array(
              'billingAddressId', 'cardholderName', 'cvv', 'number', 'deviceSessionId',
              'expirationDate', 'expirationMonth', 'expirationYear', 'token', 'venmoSdkPaymentMethodCode',
-             'deviceData',
+             'deviceData', 'fraudMerchantId',
              array('options' => $options),
              array(
                  'billingAddress' => array(

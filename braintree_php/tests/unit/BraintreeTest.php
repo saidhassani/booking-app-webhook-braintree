@@ -17,7 +17,7 @@ class Braintree_BraintreeTest extends PHPUnit_Framework_TestCase
         $this->success = true;
         $this->transaction = new stdClass();
         $t = Braintree::returnObjectOrThrowException('Braintree_Transaction', $this);
-        $this->assertType('object', $t);
+        $this->assertInternalType('object', $t);
     }
 
     function testIsset()
@@ -35,4 +35,3 @@ class Braintree_BraintreeTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(empty($t->creditCard));
     }
 }
-?>

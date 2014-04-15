@@ -1,7 +1,5 @@
 <?php
 
-require_once 'PHPUnit/Framework.php';
-
 set_include_path(
   get_include_path() . PATH_SEPARATOR .
   realpath(dirname(__FILE__)) . '/../lib'
@@ -75,7 +73,7 @@ class Braintree_TestHelper
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($curl);
         curl_close($curl);
-        preg_match('/Location: .*\?(.*)/', $response, $match);
+        preg_match('/Location: .*\?(.*)/i', $response, $match);
         return trim($match[1]);
     }
 
@@ -111,6 +109,12 @@ class Braintree_TestHelper
         Braintree_Http::put('/transactions/' . $transactionId . '/settle');
     }
 
+    public static function escrow($transactionId)
+    {
+        Braintree_Http::put('/transactions/' . $transactionId . '/escrow');
+    }
+
+
     public static function nowInEastern()
     {
         $eastern = new DateTimeZone('America/New_York');
@@ -118,5 +122,3 @@ class Braintree_TestHelper
         return $now->format('Y-m-d');
     }
 }
-
-?>
